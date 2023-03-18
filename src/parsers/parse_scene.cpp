@@ -1093,6 +1093,7 @@ std::tuple<std::string /* ID */, Material> parse_bsdf(
         }
         return std::make_tuple(id, DisneySheen{base_color, sheen_tint});
     } else if (type == "disneybsdf" || type == "principled") {
+        std::cout << "parser disneybsdf";
         Texture<Spectrum> base_color = make_constant_spectrum_texture(fromRGB(Vector3{0.5, 0.5, 0.5}));
         Texture<Real> specular_transmission = make_constant_float_texture(Real(0));
         Texture<Real> metallic = make_constant_float_texture(Real(0));
@@ -1165,7 +1166,8 @@ std::tuple<std::string /* ID */, Material> parse_bsdf(
                                               eta});
     }
 ///
-    else if (type == "irid" || type == "principled") {
+    else if (type == "irid" ) {
+    std::cout << "irid parser";
     Texture<Spectrum> base_color = make_constant_spectrum_texture(fromRGB(Vector3{ 0.5, 0.5, 0.5 }));
     Texture<Real> specular_transmission = make_constant_float_texture(Real(0));
     Texture<Real> metallic = make_constant_float_texture(Real(0));
@@ -1189,6 +1191,7 @@ std::tuple<std::string /* ID */, Material> parse_bsdf(
     bool useGaussianFit = false;
 
     for (auto child : node.children()) {
+        std::cout << "for loop";
         std::string name = child.attribute("name").value();
         if (name == "baseColor" || name == "base_color") {
             base_color = parse_spectrum_texture(
@@ -1262,12 +1265,13 @@ std::tuple<std::string /* ID */, Material> parse_bsdf(
             filmEta = parse_float(child.attribute("value").value(), default_map);
         }
         else if (name == "spectralAntialiasing") {
-            spectralAntialiasing = parse_float(child.attribute("value").value(), default_map);
+            spectralAntialiasing = parse_boolean(child.attribute("value").value(), default_map);
         }
         else if (name == "useGaussianFit") {
-            useGaussianFit = parse_float(child.attribute("value").value(), default_map);
+            useGaussianFit = parse_boolean(child.attribute("value").value(), default_map);
         }
     }
+    std::cout << "irid end";
     return std::make_tuple(id, ThinFilmIridescence{ base_color,
                                           specular_transmission,
                                           metallic,

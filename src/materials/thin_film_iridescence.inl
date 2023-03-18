@@ -138,7 +138,7 @@ inline Spectrum evalSensitivity(Spectrum OPD, Spectrum shift, bool useGaussianFi
 
 
 
-Spectrum IrisdescenceTerm(Real eta1, Real eta2, Real eta3, Real kappa3, Real filmheight, bool spectralAntialiasing, bool useGaussianFit, Real h_dot_in, const Real& wavelengths)
+Spectrum IridescenceTerm(Real eta1, Real eta2, Real eta3, Real kappa3, Real filmheight, bool spectralAntialiasing, bool useGaussianFit, Real h_dot_in, const Real& wavelengths)
 {
     Spectrum R12p, T121p, R23p, R12s, T121s, R23s, ct2;
 
@@ -262,7 +262,7 @@ Spectrum IrisdescenceTerm(Real eta1, Real eta2, Real eta3, Real kappa3, Real fil
 }
 Spectrum eval_op::operator()(const ThinFilmIridescence& bsdf) const {
 
-    std::cout << "eval_op"<<"\n";
+
     bool reflect = dot(vertex.geometric_normal, dir_in) *
         dot(vertex.geometric_normal, dir_out) > 0;
     // Flip the shading frame if it is inconsistent with the geometry normal
@@ -306,8 +306,8 @@ Spectrum eval_op::operator()(const ThinFilmIridescence& bsdf) const {
     roughness = std::clamp(roughness, Real(0.01), Real(1));
 
     Real h_dot_in = dot(half_vector, dir_in);
-    //Spectrum F = IrisdescenceTerm(eta1, eta2, eta3, kappa, filmheight ,spectralAntialiasing, useGaussianFit , h_dot_in ,*wavelengths);
-    Spectrum F = make_const_spectrum(0.5);
+    Spectrum F = IridescenceTerm(eta1, eta2, eta3, kappa, filmheight ,spectralAntialiasing, useGaussianFit , h_dot_in ,*wavelengths);
+    //Spectrum F = make_const_spectrum(0.5);
     Real D = GTR2(dot(frame.n, half_vector), roughness);
     Real G = smith_masking_gtr2(to_local(frame, dir_in), roughness) *
         smith_masking_gtr2(to_local(frame, dir_out), roughness);
@@ -319,7 +319,7 @@ Spectrum eval_op::operator()(const ThinFilmIridescence& bsdf) const {
 
 Real pdf_sample_bsdf_op::operator()(const ThinFilmIridescence& bsdf) const {
 
-    std::cout << "pdf_sample_bsdf_op" << "\n";
+
        bool reflect = dot(vertex.geometric_normal, dir_in) *
                    dot(vertex.geometric_normal, dir_out) > 0;
     // Flip the shading frame if it is inconsistent with the geometry normal
@@ -383,7 +383,7 @@ Spectrum sample(Spectrum dir_in, Vector2 rnd_param_uv, Real &pdf)
 }
 std::optional<BSDFSampleRecord>
 sample_bsdf_op::operator()(const ThinFilmIridescence& bsdf) const {
-    std::cout << "sample_bsdf_op" << "\n";
+
     // Flip the shading frame if it is inconsistent with the geometry normal
     Frame frame = vertex.shading_frame;
     if (dot(frame.n, dir_in) * dot(vertex.geometric_normal, dir_in) < 0) {
