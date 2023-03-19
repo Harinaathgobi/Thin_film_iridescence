@@ -374,59 +374,112 @@ Real pdf_sample_bsdf_op::operator()(const ThinFilmIridescence& bsdf) const {
 
 bool m_sample_visible = true;
 Real alpha = 0.3;
-Vector2 sampleVisible11(float theta,Vector2 rnd_param_uv)
-{
-    return(Vector2(1.0, 1.0));
-}
-Spectrum sampleVisible(Spectrum dir_in,Vector2 rnd_param_uv)
-{
-    Spectrum dir_in_1 = normalize(Spectrum(alpha*dir_in.x,alpha*dir_in.y,dir_in.z));
-
-    float theta = 0, phi = 0;
-    if (dir_in_1.z<float(0.999))
-    {
-        theta = std::acos(dir_in_1.z);
-        phi = std::atan2(dir_in_1.x, dir_in_1.y);
-    }
-    float sinphi, cosphi;
-    //math.sincos(phi, &sinphi, &cosphi);
-
-    return(make_const_spectrum(1.0));
-}
-Real pdfVisible(Vector2 rnd_param_uv, Real& pdf)
-{
-    return(1.0);
-}
-Spectrum sample(Spectrum dir_in, Vector2 rnd_param_uv, Real &pdf)
-{
-    Spectrum m;
-
-    if (m_sample_visible)
-    {
-        m = sampleVisible(dir_in,rnd_param_uv);
-
-        pdf = pdfVisible( rnd_param_uv, pdf);
-    }
-
-
-    return(make_const_spectrum(1.0));
-}
+/*
 std::optional<BSDFSampleRecord>
 sample_bsdf_op::operator()(const ThinFilmIridescence& bsdf) const {
 
-    // Flip the shading frame if it is inconsistent with the geometry normal
     Frame frame = vertex.shading_frame;
     if (dot(frame.n, dir_in) * dot(vertex.geometric_normal, dir_in) < 0) {
         frame = -frame;
     }
-    ////////
+    Real alpha = 0.3;
     Real pdf;
-    Spectrum m = sample(dir_in,rnd_param_uv, pdf);
+    Real roughness = eval(
+        bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
+
+
+    Spectrum m = sample_visible_normals(dir_in, alpha, alpha, rnd_param_uv);
+    Real D = GTR2(dot(frame.n, m), roughness);
+    Real G_in = smith_masking_gtr2(to_local(frame, dir_in), roughness);
+
+    if (dot(dir_in, m) < 0) {
+        pdf = 0;
+    }
+    else {
+        pdf = (D * G_in * fabs(dot(frame.n, m))) / (fabs(dot(frame.n, dir_in)));
+    }
+
+    if (pdf == 0) {
+        return BSDFSampleRecord{
+    Vector3(0,0,0),Real(0) , Real(1)   };
+    }
+
+    Vector3 dir_out = normalize(2 * dot(dir_in, m) * m - dir_in);
+    Real eta_o = 1;
+
+
+    Vector3 half_vector = normalize(dir_in + dir_out);
+
+    //BSDF Terms
+    //Real roughness = eval(
+    //    bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
+    Real anisotropic = eval(bsdf.anisotropic, vertex.uv, vertex.uv_screen_size, texture_pool);
+
+    Real aspect = sqrt(1 - anisotropic * Real(0.9));
+    constexpr Real min_alpha = Real(0.0001);
+    Real alpha_x = max(min_alpha, roughness * roughness / aspect);
+    Real alpha_y = max(min_alpha, roughness * roughness * aspect);
+
+    Real eta = dot(vertex.geometric_normal, dir_in) > 0 ? bsdf.eta : 1 / bsdf.eta;
+
+    Real wavelengths[3] = { 580.0, 550.0, 450.0 };
+    Real eta1 = bsdf.eta1;
+    Real eta2 = bsdf.eta2;
+    Real eta3 = bsdf.eta3;
+    Real kappa = bsdf.kappa3;
+
+    Real filmheight = bsdf.filmheight;
+    bool spectralAntialiasing = bsdf.spectralAntialiasing;
+    bool useGaussianFit = bsdf.useGaussianFit;
+
+    //
+    Real h_dot_in = dot(half_vector, dir_in);
+
+    Spectrum I = IridescenceTerm(eta1, eta2, eta3, kappa, filmheight, spectralAntialiasing, useGaussianFit, h_dot_in, *wavelengths);
+    Real weight = smith_masking_gtr2(to_local(frame, dir_out), roughness);
+
+    //return I*weight
+    // 
     // Homework 1: implement this!
+    return BSDFSampleRecord{ to_world(I * weight, m),
+    Real(0) , Real(1)  };
+
+
+}
+*/
+std::optional<BSDFSampleRecord>
+sample_bsdf_op::operator()(const ThinFilmIridescence& bsdf) const {
+    if (dot(vertex.geometric_normal, dir_in) < 0) {
+        // No light below the surface
+        return {};
+    }
+    // Flip the shading frame if it is inconsistent with the geometry normal
+    Frame frame = vertex.shading_frame;
+    if (dot(frame.n, dir_in) < 0) {
+        frame = -frame;
+    }
+    // Homework 1: implement this!
+
+    // Convert the incoming direction to local coordinates
+    Vector3 local_dir_in = to_local(vertex.shading_frame, dir_in);
+    Real roughness = eval(
+        bsdf.roughness, vertex.uv, vertex.uv_screen_size, texture_pool);
+    Real anisotropic = eval(
+        bsdf.anisotropic, vertex.uv, vertex.uv_screen_size, texture_pool);
+    Real aspect = 1;
+    constexpr Real min_alpha = Real(0.0001);
+    Real alpha_x = max(min_alpha, roughness * roughness / aspect);
+    Real alpha_y = max(min_alpha, roughness * roughness * aspect);
+
+    Vector3 local_micro_normal =
+        sample_visible_normals(local_dir_in, alpha_x, alpha_y, rnd_param_uv);
+
+    // Transform the micro normal to world space
+    Vector3 half_vector = to_world(vertex.shading_frame, local_micro_normal);
+    // Reflect over the world space normal
+    Vector3 reflected = normalize(-dir_in + 2 * dot(dir_in, half_vector) * half_vector);
     return BSDFSampleRecord{
-    to_world(vertex.shading_frame, sample_cos_hemisphere(rnd_param_uv)),
-    Real(0) /* eta */, Real(1) /* roughness */ };
-    
+        reflected, Real(0) /* eta */, roughness /* roughness */ };
 }
 
 TextureSpectrum get_texture_op::operator()(const ThinFilmIridescence& bsdf) const {
