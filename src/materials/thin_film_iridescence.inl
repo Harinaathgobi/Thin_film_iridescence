@@ -373,10 +373,40 @@ Real pdf_sample_bsdf_op::operator()(const ThinFilmIridescence& bsdf) const {
 }
 
 bool m_sample_visible = true;
+Real alpha = 0.3;
+Vector2 sampleVisible11(float theta,Vector2 rnd_param_uv)
+{
+    return(Vector2(1.0, 1.0));
+}
+Spectrum sampleVisible(Spectrum dir_in,Vector2 rnd_param_uv)
+{
+    Spectrum dir_in_1 = normalize(Spectrum(alpha*dir_in.x,alpha*dir_in.y,dir_in.z));
+
+    float theta = 0, phi = 0;
+    if (dir_in_1.z<float(0.999))
+    {
+        theta = std::acos(dir_in_1.z);
+        phi = std::atan2(dir_in_1.x, dir_in_1.y);
+    }
+    float sinphi, cosphi;
+    //math.sincos(phi, &sinphi, &cosphi);
+
+    return(make_const_spectrum(1.0));
+}
+Real pdfVisible(Vector2 rnd_param_uv, Real& pdf)
+{
+    return(1.0);
+}
 Spectrum sample(Spectrum dir_in, Vector2 rnd_param_uv, Real &pdf)
 {
     Spectrum m;
 
+    if (m_sample_visible)
+    {
+        m = sampleVisible(dir_in,rnd_param_uv);
+
+        pdf = pdfVisible( rnd_param_uv, pdf);
+    }
 
 
     return(make_const_spectrum(1.0));
