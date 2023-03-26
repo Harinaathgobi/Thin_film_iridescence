@@ -14,12 +14,13 @@ It requires compilers that support C++17 (gcc version >= 8, clang version >= 7, 
 Apple M1 users: you might need to build Embree from scratch since the prebuilt MacOS binary provided is built for x86 machines.
 
 # Run
+Download the meshes folder to  the scenes/disney_bsdf_test
 Try 
 ```
 cd build
-./lajolla ../scenes/cbox/cbox.xml
+./lajolla ../scenes/disney_bsdf_test/thin_film.xml
 ```
-This will generate an image "image.pfm".
+This will generate an image "image.exr"
 
 To view the image, use [hdrview](https://github.com/wkjarosz/hdrview), or [tev](https://github.com/Tom94/tev).
 
