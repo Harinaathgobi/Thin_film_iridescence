@@ -14,7 +14,7 @@ It requires compilers that support C++17 (gcc version >= 8, clang version >= 7, 
 Apple M1 users: you might need to build Embree from scratch since the prebuilt MacOS binary provided is built for x86 machines.
 
 # Run
-Download the meshes folder to  the scenes/disney_bsdf_test
+Download the meshes (https://drive.google.com/drive/folders/16sqHyXIy7XZvEEK3bKexzW1rvwZyq6LI?usp=share_link)folder to  the scenes/disney_bsdf_test
 Try 
 ```
 cd build
